@@ -1,4 +1,6 @@
-This code seeks to solve the next problem:
+This code seeks to solve the next problem over one of the methodologies proposed in the paper "Bootstrap confidence intervals for the
+contributions of individual variables to a Mahalanobis distance" by Zillur R. Shabuz & Paul H. Garthwaite, because of lack of 
+Normality distribution assumptions over the dataset in a framework of a Multivariate Analysis course:
 
 2. Researchers interested in assessing pulmonary function in non pathological populations asked subjects to run on a treadmill until
 exhaustion. Samples of air were collected at definite intervals and the gas contents analyzed. The results on 4 measures of oxygen 
@@ -156,6 +158,6 @@ vie<-c((Xbar1[4]-Xbar2[4])-sqrt((48*4/45)*qf(alphab,pb,45,lower.tail = F)*(2/50)
 UniCI<-cbind(ein,zwe,dre,vie)
 
 
-This problem was solved by Diego Alejandro Portela Cassab, Liz Polanía Giraldo and Yenny Mabel Rojas, statistics students at
-National University of Colombia. The report is attached and was checked by professor Ruven Darío Guevara.
+The solution of this problem was proposed by Diego Alejandro Portela Cassab, Liz Polanía Giraldo and Yenny Mabel Rojas, statistics
+students at National University of Colombia and the report attached was checked by professor Ruven Darío Guevara.
 
