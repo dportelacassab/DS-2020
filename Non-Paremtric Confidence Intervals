@@ -1,4 +1,5 @@
-This code seeks to solve the next problem over one of the methodologies proposed in the paper "Bootstrap confidence intervals for the
+This code seeks to solve a problem in section 6, problem 6.22(page 347) of the Applied Multivariate Statistical Analysis-6 Edition by 
+Richard Johnson & Dean Wichern, over one of the methodologies proposed in the paper "Bootstrap confidence intervals for the
 contributions of individual variables to a Mahalanobis distance" by Zillur R. Shabuz & Paul H. Garthwaite, because of lack of 
 Normality distribution assumptions over the dataset in a framework of a Multivariate Analysis course:
 
