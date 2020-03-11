@@ -1,0 +1,161 @@
+This code seeks to solve the next problem:
+
+2. Researchers interested in assessing pulmonary function in non pathological populations asked subjects to run on a treadmill until
+exhaustion. Samples of air were collected at definite intervals and the gas contents analyzed. The results on 4 measures of oxygen 
+consumption for 25 males and 25 females are given in Table 6.12 on next page. The variables were
+X1 = resting volume 0 2 (L/min)
+X2 = resting volume 0 2 (mL/kg/min)
+X3 = maximum volume 0 2 (L/min)
+X4 = maximum volume 0 2 (mL/kg/min)t
+(a) Look for gender differences by testing for equality of group means. Use \alpha = .05. If you reject H_0 : u_1 - u_2 = 0, find the 
+linear combination most responsible. Verify the assumptions.
+(b) Construct the 95% simultaneous confidence intervals for each u_1i - u_2i = 0, i = 1, 2, 3, 4. Compare with the other types of 
+intervals.
+
+rm(list = ls())
+data1<-read.table(file = "OxCoDat.txt",header = T)
+
+attach(data1); plot(data1$X1, data1$X3, col=c("red","blue"),pch=20); detach(data1)
+#visualizing data
+
+# Item a ####
+# Test Assumption ####
+set.seed(1234)
+
+mshapiro.test(t(as.matrix(data1[,-1])))
+# There is no Normality ## Es gibt keine Normality.
+boxM(data1[,-1],grouping = data1$gdr)
+inm<-indepTestSim(25, 4, N = 1000, verbose = interactive())
+inmm<-indepTest(diff, inm, alpha=0.05)
+dependogram(inmm, pvalues = FALSE, print = FALSE)
+
+#die_Datenbestände ## Dataset ##
+men<-data1[data1$gdr==1,-1]
+women<-data1[data1$gdr==2,-1]
+
+diff<-men-women
+mshapiro.test(t(as.matrix(diff))) ## Almost, however there is no Normality.
+Xbar1<-colMeans(men)
+Xbar2<-colMeans(women)
+
+S1<-cov(men)
+eigen(S1) ### S1 is a positive definite matrix.
+solve(S1)
+S2<-cov(women)
+eigen(S2) ### S2 is a positive definite matrix.
+solve(S2)
+
+S<-(S1+S2)/2
+G<-diag(1/sqrt(diag(S)))
+A<-solve(sqrtm(G%*%S%*%G))%*%G
+Wg<-A%*%(Xbar1-Xbar2) # Gamma ? estimado # Wgorro #
+propWg<-Wg*100/sum(Wg)
+
+t(Wg)%*%Wg
+D12<-t(Xbar1-Xbar2)%*%solve(S)%*%(Xbar1-Xbar2) # Checking
+
+Wabs<-Wg^2
+Wprop<-Wg^2/sum(Wg^2)
+
+#Method A ####
+# Step One ####
+#  Bootstraping Manually
+
+samp_size=25
+inter = 50000
+samp1<-matrix(sample(1:nrow(diff), samp_size*inter, replace=T),ncol=inter, byrow=T)
+samp2<-matrix(sample(1:nrow(diff), samp_size*inter, replace=T),ncol=inter, byrow=T)
+WB<-matrix(0,4,inter) # this matrix is 4 x inter because there is 4 variables in the data set.
+for(i in 1:inter){ # B hace referencia a Bootstrap.
+  B1<-men[samp1[,i],]
+  B2<-women[samp2[,i],]
+  X1BAR<-colMeans(B1)
+  X2BAR<-colMeans(B2)
+  S1B<-cov(B1)
+  S2B<-cov(B2)
+  SB<-(S1B+S2B)/2
+  GB<-diag(1/sqrt(diag(SB)))
+  AB<-solve(sqrtm(GB%*%SB%*%GB))%*%GB
+  WB[,i]<-AB%*%(X1BAR-X2BAR)
+}
+
+
+# i) Seeking a CI for (W_i)^2, we set thetha=(W_i)^2 and
+# gamma = W_i. # Absolute Value #
+WBabs<-WB^2    # Aquí comparamos por elemento en cada fila.
+
+# ii) For an interval for (W_i)^2/sum((W_i)^2), thetha=
+# (W_i)^2/sum((W_i)^2) and gamma = t(w_1,W_2,...,W_m).
+
+WBprop<-matrix(0,4,inter)
+for (n in 1:inter) {
+    WBprop[,n]<-t(WBabs[,n]/sum(WBabs[,n]))
+}
+# Aquí comparamos por vector columna.
+
+# Step Two ####
+vkge<-matrix(0,4,inter)
+for (k in 1:inter) {
+  vkge[,k]<-(2*Wprop-WBprop[,k])^2/sum((2*Wprop-WBprop[,k])^2) # V_kgorro estrella  
+}
+
+# Step Three #### 
+# 100(1-2*alpha)% conf.int
+hist(WBprop[1,], main= "Vol. reposo O2 L/mn", col="skyblue")
+hist(WBprop[2,], main="Vol. reposo O2 ml/Kg/mn", col="skyblue")
+hist(WBprop[3,], main= "Vol. reposo maximo O2 L/mn", col="skyblue")
+hist(WBprop[4,], main= "Vol. reposo maximo O2 L/mn", col="skyblue")
+# Confidence intervals for proportion for the first variable.
+
+a<-seq(0,0.050,0.005)
+b<-seq(0.050,0,-0.005)
+alphas<-cbind(a,(1-b))
+CI1<-matrix(0,11,2)
+CI2<-matrix(0,11,2)
+CI3<-matrix(0,11,2)
+CI4<-matrix(0,11,2)
+for (p in 1:11) {
+  CI1[p,]<-quantile(vkge[1,],alphas[p,])
+}
+for (p in 1:11) {
+  CI2[p,]<-quantile(vkge[2,],alphas[p,])
+}
+for (p in 1:11) {
+  CI3[p,]<-quantile(vkge[3,],alphas[p,])
+}
+for (p in 1:11) {
+  CI4[p,]<-quantile(vkge[4,],alphas[p,])
+}
+
+IS1<-order(CI1[,2]-CI1[,1])
+IS2<-order(CI2[,2]-CI2[,1]) 
+IS3<-order(CI3[,2]-CI3[,1]) 
+IS4<-order(CI4[,2]-CI4[,1])
+
+# Item b ####
+alphab=0.05
+pb=4
+
+# Confidence Region ####
+T2b<-t(Xbar1-Xbar2)%*%solve((2/50)*S)%*%(Xbar1-Xbar2)
+ccuad<-(48*4/45)*qf(alphab,pb,45,lower.tail = F)
+T2b>ccuad # We reject H_0.
+
+# Bonferroni CI ####
+eins<-c((Xbar1[1]-Xbar2[1])-qt(alphab/(2*pb),48,lower.tail = F)*sqrt(S[1,1]),(Xbar1[1]-Xbar2[1])+qt(alphab/(2*pb),48,lower.tail = F)*sqrt(S[1,1]))
+zwei<-c((Xbar1[2]-Xbar2[2])-qt(alphab/(2*pb),48,lower.tail = F)*sqrt(S[2,2]),(Xbar1[2]-Xbar2[2])+qt(alphab/(2*pb),48,lower.tail = F)*sqrt(S[2,2]))
+drei<-c((Xbar1[3]-Xbar2[3])-qt(alphab/(2*pb),48,lower.tail = F)*sqrt(S[3,3]),(Xbar1[3]-Xbar2[3])+qt(alphab/(2*pb),48,lower.tail = F)*sqrt(S[3,3]))
+vier<-c((Xbar1[4]-Xbar2[4])-qt(alphab/(2*pb),48,lower.tail = F)*sqrt(S[4,4]),(Xbar1[4]-Xbar2[4])+qt(alphab/(2*pb),48,lower.tail = F)*sqrt(S[4,4]))
+BonfCI<-cbind(eins,zwei,drei,vier)
+
+#Univariate CI ####
+ein<-c((Xbar1[1]-Xbar2[1])-sqrt((48*4/45)*qf(alphab,pb,45,lower.tail = F)*(2/50)*S[1,1]),(Xbar1[1]-Xbar2[1])+sqrt((48*4/45)*qf(alphab,pb,45,lower.tail = F)*(2/50)*S[1,1]))
+zwe<-c((Xbar1[2]-Xbar2[2])-sqrt((48*4/45)*qf(alphab,pb,45,lower.tail = F)*(2/50)*S[2,2]),(Xbar1[2]-Xbar2[2])+sqrt((48*4/45)*qf(alphab,pb,45,lower.tail = F)*(2/50)*S[2,2]))
+dre<-c((Xbar1[3]-Xbar2[3])-sqrt((48*4/45)*qf(alphab,pb,45,lower.tail = F)*(2/50)*S[3,3]),(Xbar1[3]-Xbar2[3])+sqrt((48*4/45)*qf(alphab,pb,45,lower.tail = F)*(2/50)*S[3,3]))
+vie<-c((Xbar1[4]-Xbar2[4])-sqrt((48*4/45)*qf(alphab,pb,45,lower.tail = F)*(2/50)*S[4,4]),(Xbar1[4]-Xbar2[4])+sqrt((48*4/45)*qf(alphab,pb,45,lower.tail = F)*(2/50)*S[4,4]))
+UniCI<-cbind(ein,zwe,dre,vie)
+
+
+This problem was solved by Diego Alejandro Portela Cassab, Liz Polanía Giraldo and Yenny Mabel Rojas, statistics students at
+National University of Colombia. The report is attached and was checked by professor Ruven Darío Guevara.
+
